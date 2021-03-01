@@ -3,14 +3,12 @@
     <mo-aside />
     <keep-alive>
       <router-view v-if="$route.meta.keepAlive">
-        <!-- 这里是会被缓存的视图组件，比如 Home！ -->
       </router-view>
     </keep-alive>
 
     <router-view v-if="!$route.meta.keepAlive">
-      <!-- 这里是不被缓存的视图组件，比如 Edit！ -->
     </router-view>
-    <mo-speedometer />
+    <mo-speedometer v-show="speedometerVisible"/>
     <mo-add-task :visible="addTaskVisible" :type="addTaskType" />
     <mo-about-panel :visible="aboutPanelVisible" />
     <mo-task-item-info :visible="taskItemInfoVisible" :task="currentTaskItem" />
@@ -41,7 +39,8 @@
       ...mapState('app', {
         aboutPanelVisible: state => state.aboutPanelVisible,
         addTaskVisible: state => state.addTaskVisible,
-        addTaskType: state => state.addTaskType
+        addTaskType: state => state.addTaskType,
+        speedometerVisible: state => state.speedometerVisible
       }),
       ...mapState('task', {
         taskItemInfoVisible: state => state.taskItemInfoVisible,

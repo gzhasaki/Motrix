@@ -276,6 +276,7 @@
     },
     data () {
       const { locale } = this.$store.state.preference.config
+      console.log('this.$store.state.preference.config', this.$store.state.preference.config)
       const form = initForm(this.$store.state.preference.config)
       const formOriginal = cloneDeep(form)
 

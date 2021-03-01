@@ -24,6 +24,7 @@ export default class ConfigManager {
   constructor () {
     this.systemConfig = {}
     this.userConfig = {}
+    this.hasakiConfig = {}
 
     this.init()
   }
@@ -31,6 +32,7 @@ export default class ConfigManager {
   init () {
     this.initSystemConfig()
     this.initUserConfig()
+    this.initHasakiConfig()
   }
 
   /**
@@ -127,6 +129,25 @@ export default class ConfigManager {
     this.fixUserConfig()
   }
 
+  initHasakiConfig () {
+    this.hasakiConfig = new Store({
+      name: 'hasaki',
+      // Schema need electron-store upgrade to 3.x.x,
+      // but it will cause the application build to fail.
+      // schema: {
+      //   theme: {
+      //     type: 'string',
+      //     enum: ['auto', 'light', 'dark']
+      //   }
+      // },
+      /* eslint-disable quote-props */
+      defaults: {
+        'play-search-history': []
+      }
+      /* eslint-enable quote-props */
+    })
+  }
+
   fixSystemConfig () {
     // Remove aria2c unrecognized options
     const { others } = separateConfig(this.systemConfig.store)
@@ -173,6 +194,15 @@ export default class ConfigManager {
     return this.userConfig.get(key, defaultValue)
   }
 
+  getHasakiConfig (key, defaultValue) {
+    if (typeof key === 'undefined' &&
+      typeof defaultValue === 'undefined') {
+      return this.hasakiConfig.store
+    }
+
+    return this.hasakiConfig.get(key, defaultValue)
+  }
+
   getLocale () {
     return this.getUserConfig('locale') || app.getLocale()
   }
@@ -183,6 +213,10 @@ export default class ConfigManager {
 
   setUserConfig (...args) {
     this.userConfig.set(...args)
+  }
+
+  setHasakiConfig (...args) {
+    this.hasakiConfig.set(...args)
   }
 
   reset () {

@@ -18,6 +18,7 @@
         :rules="rules"
       >
         <el-form-item
+          v-if="false"
           :label="`${$t('preferences.auto-update')}: `"
           :label-width="formLabelWidth"
         >

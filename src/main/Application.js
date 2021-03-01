@@ -566,8 +566,15 @@ export default class Application extends EventEmitter {
     }
   }
 
+  saveHasakiPreference (config = {}) {
+    logger.info('[Motrix] save hasaki preference:', config)
+    this.configManager.setHasakiConfig(config)
+  }
+
   handleCommands () {
     this.on('application:save-preference', this.savePreference)
+
+    this.on('application:save-hasaki-preference', this.saveHasakiPreference)
 
     this.on('application:update-tray', (tray) => {
       this.trayManager.updateTrayByImage(tray)
@@ -753,6 +760,13 @@ export default class Application extends EventEmitter {
       const result = {
         ...systemConfig,
         ...userConfig
+      }
+      return result
+    })
+    ipcMain.handle('get-hasaki-config', async () => {
+      const hasakiConfig = this.configManager.getHasakiConfig()
+      const result = {
+        ...hasakiConfig
       }
       return result
     })

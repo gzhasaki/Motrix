@@ -12,7 +12,8 @@ const state = {
   bigSur: isBigSur(),
   trayFocused: false,
   aboutPanelVisible: false,
-  onlinePlayerVisible: false,
+  speedometerVisible: false,
+  playingTitle: '',
   engineInfo: {
     version: '',
     enabledFeatures: []
@@ -94,6 +95,12 @@ const mutations = {
     if (state.interval > MIN_INTERVAL) {
       state.interval -= millisecond
     }
+  },
+  UPDATE_SPEEDOMETER_VISIBLE (state, visible) {
+    state.speedometerVisible = visible
+  },
+  UPDATE_PLAYING_TITLE (state, title) {
+    state.playingTitle = title
   }
 }
 
@@ -109,6 +116,12 @@ const actions = {
   },
   hideAboutPanel ({ commit }) {
     commit('UPDATE_ABOUT_PANEL_VISIBLE', false)
+  },
+  hideSpeedometer ({ commit }) {
+    commit('UPDATE_SPEEDOMETER_VISIBLE', false)
+  },
+  showSpeedometer ({ commit }) {
+    commit('UPDATE_SPEEDOMETER_VISIBLE', true)
   },
   fetchEngineInfo ({ commit }) {
     api.getVersion()
@@ -174,6 +187,9 @@ const actions = {
   },
   resetInterval ({ commit }) {
     commit('UPDATE_INTERVAL', BASE_INTERVAL)
+  },
+  updatePlayingTitle ({ commit }, title) {
+    commit('UPDATE_PLAYING_TITLE', title)
   }
 }
 

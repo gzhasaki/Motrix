@@ -110,3 +110,11 @@ store.dispatch('preference/fetchPreference')
   .catch((err) => {
     alert(err)
   })
+
+store.dispatch('hasaki/fetchPreference')
+  .then((config) => {
+    console.info('[Motrix] load hasaki preference:', config)
+  })
+  .catch((err) => {
+    alert(err)
+  })

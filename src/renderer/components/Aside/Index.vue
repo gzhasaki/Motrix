@@ -10,7 +10,7 @@
           <mo-icon name="menu-add" width="20" height="20" />
         </li>
         <li @click="nav('/online-player')" class="non-draggable">
-          <mo-icon name="menu-add" width="20" height="20" />
+          <mo-icon name="task-start-line" width="20" height="20" />
         </li>
       </ul>
       <ul class="menu bottom-menu">
@@ -34,6 +34,7 @@
   import '@/components/Icons/menu-add'
   import '@/components/Icons/menu-preference'
   import '@/components/Icons/menu-about'
+  import '@/components/Icons/menu-play'
 
   export default {
     name: 'mo-aside',

@@ -26,7 +26,7 @@
       }, true)
     },
     destroyed () {
-
+      this.destroyedPlayer()
     },
     data () {
       return {
@@ -42,54 +42,61 @@
       }
     },
     methods: {
+      destroyedPlayer () {
+        if (window.aliPlayerInstance) {
+          window.aliPlayerInstance.dispose()
+          window.aliPlayerInstance = null
+        }
+      },
       initEvent () {
         const _this = this
         window.EventBus.$on('change-play-url', function (args) {
-          if (!window.Aliplayer) {
-            _this.insertScript()
-          } else {
-            _this.initPlayer()
+          if (args && args.url) {
+            _this.sourceUrl = args.url
+            if (!window.Aliplayer) {
+              _this.insertScript()
+            } else {
+              _this.initPlayer()
+            }
           }
-          _this.sourceUrl = args.url
-          _this.instance.loadByUrl(_this.sourceUrl)
         })
       },
       changePlayUrl (url) {
-        if (this.instance) {
-          this.instance.loadByUrl(url)
+        if (window.aliPlayerInstance) {
+          window.aliPlayerInstance.loadByUrl(url)
         }
       },
       prePlay () {
-        const duration = this.instance.getDuration()
+        const duration = window.aliPlayerInstance.getDuration()
         if (duration) {
-          const currentTime = this.instance.getCurrentTime()
-          this.instance.seek(currentTime + this.interval * duration)
+          const currentTime = window.aliPlayerInstance.getCurrentTime()
+          window.aliPlayerInstance.seek(currentTime + this.interval * duration)
         }
       },
       backPlay () {
-        const duration = this.instance.getDuration()
+        const duration = window.aliPlayerInstance.getDuration()
         if (duration) {
-          const currentTime = this.instance.getCurrentTime()
-          this.instance.seek(currentTime - this.interval * duration)
+          const currentTime = window.aliPlayerInstance.getCurrentTime()
+          window.aliPlayerInstance.seek(currentTime - this.interval * duration)
         }
       },
       togglePlay () {
         if (this.isPlay) {
-          this.instance.pause()
+          window.aliPlayerInstance.pause()
         } else {
-          this.instance.play()
+          window.aliPlayerInstance.play()
         }
       },
       upVol () {
-        const volume = this.instance.getVolume()
+        const volume = window.aliPlayerInstance.getVolume()
         if (volume + 0.1 < 1) {
-          this.instance.setVolume(volume + 0.1)
+          window.aliPlayerInstance.setVolume(volume + 0.1)
         }
       },
       downVol () {
-        const volume = this.instance.getVolume()
+        const volume = window.aliPlayerInstance.getVolume()
         if (volume - 0.1 > 0) {
-          this.instance.setVolume(volume - 0.1)
+          window.aliPlayerInstance.setVolume(volume - 0.1)
         }
       },
       insertScript () {
@@ -115,11 +122,12 @@
       },
       initPlayer () {
         const _this = this
-        if (this.instance == null) {
+        this.destroyedPlayer()
+        if (window.aliPlayerInstance == null) {
           // eslint-disable-next-line no-undef
-          _this.instance = new Aliplayer({
+          window.aliPlayerInstance = new Aliplayer({
             id: 'player-con',
-            source: this.sourceUrl,
+            source: _this.sourceUrl,
             width: '100%',
             height: '100%',
             autoplay: false,
@@ -131,10 +139,10 @@
             useH5Prism: true
           }, function () {
           })
-          _this.instance.on('play', function (e) {
+          window.aliPlayerInstance.on('play', function (e) {
             _this.isPlay = true
           })
-          _this.instance.on('pause', function (e) {
+          window.aliPlayerInstance.on('pause', function (e) {
             _this.isPlay = false
           })
         }

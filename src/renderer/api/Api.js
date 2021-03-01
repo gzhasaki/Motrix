@@ -15,13 +15,11 @@ import { ENGINE_RPC_HOST } from '@shared/constants'
 export default class Api {
   constructor (options = {}) {
     this.options = options
-
     this.init()
   }
 
   async init () {
     this.config = await this.loadConfig()
-
     this.client = this.initClient()
     this.client.open()
   }
@@ -37,13 +35,23 @@ export default class Api {
     return result
   }
 
+  async loadHasakiConfigFromNativeStore () {
+    return await ipcRenderer.invoke('get-hasaki-config')
+  }
+
   async loadConfig () {
     let result = is.renderer()
       ? await this.loadConfigFromNativeStore()
       : this.loadConfigFromLocalStorage()
-
+    const hasakiResult = await this.loadHasakiConfig()
+    this.hasakiConfig = changeKeysToCamelCase(hasakiResult)
     result = changeKeysToCamelCase(result)
     return result
+  }
+
+  async loadHasakiConfig () {
+    const result = await this.loadHasakiConfigFromNativeStore()
+    return changeKeysToCamelCase(result)
   }
 
   initClient () {
@@ -51,6 +59,7 @@ export default class Api {
       rpcListenPort: port,
       rpcSecret: secret
     } = this.config
+    console.log('init client', port, secret)
     const host = ENGINE_RPC_HOST
     return new Aria2({
       host,
@@ -85,6 +94,23 @@ export default class Api {
     }
   }
 
+  fetchHasakiPreference () {
+    return new Promise((resolve) => {
+      this.hasakiConfig = this.loadHasakiConfig()
+      resolve(this.hasakiConfig)
+    })
+  }
+
+  saveHasakiPreference (params = {}) {
+    const kebabParams = changeKeysToKebabCase(params)
+    console.log('kebabParams', kebabParams, 'params', params)
+    if (is.renderer()) {
+      return this.saveHasakiPreferenceToNativeStore(kebabParams)
+    } else {
+      return this.savePreferenceToLocalStorage(kebabParams)
+    }
+  }
+
   savePreferenceToLocalStorage () {
     // TODO
   }
@@ -109,6 +135,10 @@ export default class Api {
     }
 
     ipcRenderer.send('command', 'application:save-preference', config)
+  }
+
+  saveHasakiPreferenceToNativeStore (params = {}) {
+    ipcRenderer.send('command', 'application:save-hasaki-preference', params)
   }
 
   getVersion () {
@@ -181,6 +211,7 @@ export default class Api {
       const args = compactUndefined([[uri], engineOptions])
       return ['aria2.addUri', ...args]
     })
+    console.log('下载参数', params)
     return this.client.multicall(tasks)
   }
 
@@ -213,7 +244,7 @@ export default class Api {
         ['aria2.tellActive', ...activeArgs],
         ['aria2.tellWaiting', ...waitingArgs]
       ]).then((data) => {
-        console.log('[Motrix] fetch downloading task list data:', data)
+        // console.log('[Motrix] fetch downloading task list data:', data)
         const result = mergeTaskResult(data)
         resolve(result)
       }).catch((err) => {

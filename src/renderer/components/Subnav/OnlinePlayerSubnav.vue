@@ -1,28 +1,41 @@
 <template>
   <nav class="subnav-inner">
     <h3>{{ title }}</h3>
-  <div style="font-size: 11px;">
-    <el-input @keydown.enter.native="search" size="mini" placeholder="输入视频名称" v-model="wd"
-              class="input-with-select">
+    <el-autocomplete
+      class="inline-input"
+      v-model="wd"
+      :fetch-suggestions="querySearch"
+      placeholder="请输入内容"
+      @keydown.enter.native="search"
+      @select="search"
+    >
       <el-button @click="search" slot="append" icon="el-icon-search"></el-button>
-    </el-input>
+    </el-autocomplete>
+  <div style="position: fixed;
+    font-size: 12px;
+    height: 100%;
+    width: 173px;
+    overflow-x: hidden;">
+
     <el-tree
+      v-loading="loading"
       :props="props"
       lazy
       :load="loadNode"
       @node-click="handleNodeClick"
       :data="searchData">
                     <span class="custom-tree-node" slot-scope="{ node}">
-                            <span :titile="node.label">{{ node.label }}</span>
-                            <span v-show="node.level > 1">
-                                <el-button
-                                  type="text"
-                                  size="mini"
-                                  @click.stop="() => copyUrl(node)">
-                                复制链接
-                                </el-button>
-                            </span>
-                     </span>
+<!--                      <i class="el-icon-download"></i>-->
+                        <span v-show="node.level > 1 && node.data.download">
+                            <el-button
+                            type="text"
+                            size="mini"
+                            @click.stop="() => copyUrl(node)">
+                            下载
+                            </el-button>
+                        </span>
+                    <span :titile="node.label">{{ node.label }}</span>
+                    </span>
     </el-tree>
   </div>
   </nav>
@@ -35,9 +48,27 @@
   import {
     get
   } from '@/utils/request'
+  import {
+    initTaskForm,
+    buildUriPayload
+  } from '@/utils/task'
+  import { mapState } from 'vuex'
+  import { cloneDeep } from 'lodash'
+  // import { diffConfig } from '@shared/utils'
+
+  const initSearchHistory = (config) => {
+    const {
+      playSearchHistory
+    } = config
+    const result = {
+      playSearchHistory
+    }
+    console.log('initSearchHistory', playSearchHistory, config)
+    return result
+  }
 
   export default {
-    name: 'mo-preference-subnav',
+    name: 'mo-onlineplayer-subnav',
     props: {
       current: {
         type: String,
@@ -46,32 +77,62 @@
     },
     computed: {
       title () {
-        // return this.$t('subnav.preferences')
         return this.$t('在线播放')
-      }
+      },
+      ...mapState('hasaki', {
+        hasakiConfig: state => state.hasakiConfig
+      })
     },
     mounted () {
+      console.log('hasakiConfig', this.hasakiConfig)
+      this.buildHistoryByCache(this.form.playSearchHistory)
       this.search()
     },
     data () {
+      const form = cloneDeep(initSearchHistory(this.$store.state.hasaki.hasakiConfig))
+      const formOriginal = cloneDeep(form)
+      console.log()
       return {
         loading: true,
         wd: '',
         searchData: [],
+        history: history,
         props: {
           children: 'children',
           label: 'label',
           isLeaf: 'leaf'
-        }
+        },
+        form,
+        formOriginal
+      }
+    },
+    watch: {
+      'form.playSearchHistory' (oldValue, newValue) {
+        this.buildHistoryByCache(newValue)
       }
     },
     methods: {
-      nav (category = 'basic') {
-        this.$router.push({
-          path: `/preference/${category}`
-        }).catch(err => {
-          console.log(err)
-        })
+      buildHistoryByCache (cache) {
+        if (cache) {
+          this.history = []
+          for (let i = cache.length - 1; i >= 0; i--) {
+            const his = cache[i]
+            this.history.push({
+              value: his
+            })
+          }
+        }
+      },
+      querySearch (queryString, cb) {
+        const his = this.history
+        const results = queryString ? his.filter(this.createFilter(queryString)) : his
+        // 调用 callback 返回建议列表的数据
+        cb(results)
+      },
+      createFilter (queryString) {
+        return (his) => {
+          return (his.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
+        }
       },
       loadNode: function (node, resolve) {
         if (this.searchData.length !== 0) {
@@ -80,6 +141,17 @@
             get('https://api.okzy.tv/api.php/provide/vod/at/json/?ac=detail&ids=' + vodId).then(res => {
               if (res.list && res.list.length !== 0) {
                 const result = res.list[0]
+                const downloadUrl = result.vod_down_url
+                const downloadMap = {}
+                if (downloadUrl) {
+                  const downloadUrlArray = downloadUrl.split('#')
+                  for (let i = 0; i < downloadUrlArray.length; i++) {
+                    const downloadUrlString = downloadUrlArray[i]
+                    const downloadSplit = downloadUrlString.split('$')
+                    // 第1集：下载地址
+                    downloadMap[downloadSplit[0]] = downloadSplit[1]
+                  }
+                }
                 const playUrl = result.vod_play_url
                 const split = result.vod_play_note
                 const array = playUrl.split(split)
@@ -98,7 +170,9 @@
                     seasonData.push({
                       label: strings[0],
                       leaf: true,
-                      url: strings[1]
+                      url: strings[1],
+                      data: result,
+                      download: downloadMap[strings[0]]
                     })
                   }
                   return resolve(seasonData)
@@ -113,6 +187,24 @@
       },
       search () {
         this.loading = true
+        if (this.wd !== '') {
+          if (this.form.playSearchHistory.length === 10) {
+            if (this.form.playSearchHistory.indexOf(this.wd) === -1) {
+              this.form.playSearchHistory.shift()
+            }
+          }
+          if (this.form.playSearchHistory.indexOf(this.wd) === -1) {
+            this.form.playSearchHistory.push(this.wd)
+          }
+          console.log('this.form.playSearchHistory', this.form)
+          this.$store.dispatch('hasaki/save', this.form)
+            .then(() => {
+              // this.syncFormConfig()
+            })
+            .catch(() => {
+              this.$msg.success(this.$t('preferences.save-fail-message'))
+            })
+        }
         get('https://api.okzy.tv/api.php/provide/vod/at/json/?wd=' + encodeURI(this.wd)).then(res => {
           const result = res.list
           this.searchData = []
@@ -129,17 +221,20 @@
       },
       handleNodeClick (node) {
         if (node.leaf) {
-          // this.sourceUrl = node.url
+          this.$store.dispatch('app/updatePlayingTitle', '正在播放：' + node.data.vod_name + '（' + node.label + ')')
           window.EventBus.$emit('change-play-url', { url: node.url })
         }
       },
       copyUrl (node) {
         if (node.data && node.data.leaf) {
-          // clipboard.writeText(node.data.url)
-          this.$message({
-            message: '复制成功',
-            duration: 600,
-            type: 'success'
+          const downloadUrl = node.data.download
+          this.$store.dispatch('app/updateAddTaskUrl', downloadUrl)
+          const form = initTaskForm(this.$store.state)
+          const vodName = node.data.data.vod_name
+          form.out = vodName + '（' + node.label + ')' + downloadUrl.substring(downloadUrl.lastIndexOf('.'))
+          const payload = buildUriPayload(form)
+          this.$store.dispatch('task/addUri', payload).catch(err => {
+            this.$msg.error(err.message)
           })
         }
       }

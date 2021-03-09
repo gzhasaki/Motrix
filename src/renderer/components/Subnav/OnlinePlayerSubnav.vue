@@ -13,7 +13,7 @@
     </el-autocomplete>
   <div style="position: fixed;
     font-size: 12px;
-    height: 100%;
+    height: calc(100vh - 130px);
     width: 173px;
     overflow-x: hidden;">
 

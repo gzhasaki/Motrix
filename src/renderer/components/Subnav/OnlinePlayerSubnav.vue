@@ -63,7 +63,6 @@
     const result = {
       playSearchHistory
     }
-    console.log('initSearchHistory', playSearchHistory, config)
     return result
   }
 
@@ -84,14 +83,12 @@
       })
     },
     mounted () {
-      console.log('hasakiConfig', this.hasakiConfig)
       this.buildHistoryByCache(this.form.playSearchHistory)
       this.search()
     },
     data () {
       const form = cloneDeep(initSearchHistory(this.$store.state.hasaki.hasakiConfig))
       const formOriginal = cloneDeep(form)
-      console.log()
       return {
         loading: true,
         wd: '',
@@ -196,7 +193,6 @@
           if (this.form.playSearchHistory.indexOf(this.wd) === -1) {
             this.form.playSearchHistory.push(this.wd)
           }
-          console.log('this.form.playSearchHistory', this.form)
           this.$store.dispatch('hasaki/save', this.form)
             .then(() => {
               // this.syncFormConfig()

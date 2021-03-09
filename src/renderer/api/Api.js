@@ -103,7 +103,6 @@ export default class Api {
 
   saveHasakiPreference (params = {}) {
     const kebabParams = changeKeysToKebabCase(params)
-    console.log('kebabParams', kebabParams, 'params', params)
     if (is.renderer()) {
       return this.saveHasakiPreferenceToNativeStore(kebabParams)
     } else {
